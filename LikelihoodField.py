@@ -83,16 +83,18 @@ class LikelihoodField:
 
 			for i in range(len(self.source_['ranges'])):  # 遍历所有的测量值
 				r = self.source_['ranges'][i]  # 当前测量值
-				# if r < self.source_['range_min'] or r > self.source_['range_max']-1:  # 如果测量值超出范围，则跳过
-				# 	continue
+
 				if r < 3 or r > 800-1:  # 如果测量值超出范围（3cm-800cm），则跳过
 					continue
 				angle = np.rad2deg(self.source_['angles'][i])  # 计算角度
 				# 留出四个轮子的角度，放弃传感器信息。
-				if( (angle>30 and angle<60) and (angle>120 and angle<150) and (angle >210 and angle <240) and (angle >300 and angle <330)):
+				if( (angle>30 and angle<60) or (angle>120 and angle<150) or (angle >210 and angle <240) or (angle >300 and angle <330)):
+					continue
+				# if (angle>210 and angle<330):
+				# 	continue
+				if (angle>30 and angle<160):
 					continue
 				angle=np.deg2rad(angle)
-				# theta = self.current_pose_[2]  
 				theta = self.current_pose_[2] + angle # 计算当前姿态的角度
 				#pf代表在地图图像上的坐标
 				pf=[int(round(self.current_pose_[0]+r*np.cos(theta))*self.ratios_[level]+self.field_[level].shape[1]/3),
@@ -130,8 +132,9 @@ class LikelihoodField:
 			try:
 				dx = np.linalg.solve(H, b)
 			except:
+				dx=np.dot(np.linalg.pinv(H),b)
 				# print("singular H")
-				return -1
+				# return -1
 			if np.isnan(dx[0]):
 				break
 
@@ -144,60 +147,73 @@ class LikelihoodField:
 			self.current_pose_[:2] += dx[:2]
 			self.current_pose_[2] += dx[2]
 			# 手动限制机器人的位置
-			self.current_pose_[0] = max(0, min(330, self.current_pose_[0]))
-			self.current_pose_[1] = max(0, min(280, self.current_pose_[1]))
-			if(abs(self.current_pose_[0]-self.original_pose[0])>self.field_[-1].shape[1]/3/5 \
-	  			or abs(self.current_pose_[1]-self.original_pose[1])>self.field_[-1].shape[0]/3/5):
+			self.current_pose_[0] = max(self.original_pose[0]-30, min(30+self.original_pose[0], self.current_pose_[0]))
+			self.current_pose_[1] = max(self.original_pose[1]-30, min(30+self.original_pose[1], self.current_pose_[1]))
+			# if(abs(self.current_pose_[0]-self.original_pose[0])>self.field_[-1].shape[1]/3/5 \
+	  		# 	or abs(self.current_pose_[1]-self.original_pose[1])>self.field_[-1].shape[0]/3/5):
 				# print("point move too far")
-				return -1
+				# return -1
 			lastCost = cost
 
 		return cost
 
+	# def Align(self, source_):
+	# 	# if self.pose_last is not None and self.pose_last_last is not None:
+	# 	# 	self.current_pose_[0]+=(self.pose_last[0]-self.pose_last_last[0])/2
+	# 	# 	self.current_pose_[1]+=(self.pose_last[1]-self.pose_last_last[1])/2
+	# 	# 	self.current_pose_[2]+=(self.pose_last[2]-self.pose_last_last[2])/2
+	# 	# 记录当前位置
+	# 	original_pose = self.current_pose_.copy()
+	# 	# 先粗略计算机器人位置差
+	# 	cost = self.AlignInLevelGaussNewton(source_, 0)
+	# 	temp_pose=self.current_pose_.copy()
+	# 	print("cost: ", cost)current_pose_
+	# 	# 机器人位置差大于0.1，进行多角度计算
+	# 	if cost > 0.05 or cost==-1:
+	# 		# 将360度分为5个部分
+	# 		angles = np.linspace(0, 2 * np.pi, 10)
+	# 		# 对每个角度进行配准，并找到成本最小的角度
+	# 		best_angle = None
+	# 		min_cost = max(cost,100)  # 初始最小成本设为角度为0时的成本
+	# 		for angle in angles[1:]:  # 从第二个角度开始计算，因为角度为0已经计算过了
+	# 			self.current_pose_ = original_pose.copy()
+	# 			self.current_pose_[2] += angle
+	# 			cost = self.AlignInLevelGaussNewton(source_, 0)
+	# 			print("angle: ", original_pose[2] + angle, "cost: ", cost)
+	# 			cv2.imshow('scan', cv2.addWeighted(self.scan_map[0], 0.5, self.field_[0], 0.5, 0))
+	# 			cv2.waitKey(0)
+	# 			if cost > 0:
+	# 				if cost < min_cost:
+	# 					min_cost = cost
+	# 					best_angle = angle
+	# 					temp_pose=self.current_pose_.copy()
+	# 		# 使用最佳角度在每个层级上进行配准
+	# 		# if best_angle is not None:
+	# 		print("min_cost: ", min_cost)
+
+	# 		self.current_pose_ = temp_pose.copy()
+	# 		# self.current_pose_[2] += best_angle
+	# 		# self.AlignInLevelGaussNewton(source_, 0)  # 直接从第二层开始配准
+	# 		self.AlignInLevelGaussNewton(source_, 1)  # 直接从第二层开始配准
+	# 		self.AlignInLevelGaussNewton(source_, 2)  # 直接从第二层开始配准
+	# 	else:
+	# 		self.current_pose_ = original_pose.copy()
+	# 		self.AlignInLevelGaussNewton(source_, 2)
+
+
+	# 	if self.pose_last is not None:
+	# 		self.pose_last_last = self.pose_last.copy()
+	# 	self.pose_last=self.current_pose_.copy()
 	def Align(self, source_):
-		# if self.pose_last is not None and self.pose_last_last is not None:
-		# 	self.current_pose_[0]+=(self.pose_last[0]-self.pose_last_last[0])/2
-		# 	self.current_pose_[1]+=(self.pose_last[1]-self.pose_last_last[1])/2
-		# 	self.current_pose_[2]+=(self.pose_last[2]-self.pose_last_last[2])/2
+		# # 先粗略计算机器人位置差
+		if self.pose_last is not None and self.pose_last_last is not None:
+			self.current_pose_[0]+=(self.pose_last[0]-self.pose_last_last[0])/2
+			self.current_pose_[1]+=(self.pose_last[1]-self.pose_last_last[1])/2
+			self.current_pose_[2]+=(self.pose_last[2]-self.pose_last_last[2])/2
 		# 记录当前位置
-		original_pose = self.current_pose_.copy()
-		# 先粗略计算机器人位置差
-		cost = self.AlignInLevelGaussNewton(source_, 0)
-		temp_pose=self.current_pose_.copy()
-		print("cost: ", cost)
-		# 机器人位置差大于0.1，进行多角度计算
-		if cost > 0.05 or cost==-1:
-			# 将360度分为5个部分
-			angles = np.linspace(0, 2 * np.pi, 4)
-			# 对每个角度进行配准，并找到成本最小的角度
-			best_angle = None
-			min_cost = max(cost,100)  # 初始最小成本设为角度为0时的成本
-			for angle in angles[1:]:  # 从第二个角度开始计算，因为角度为0已经计算过了
-				self.current_pose_ = original_pose.copy()
-				self.current_pose_[2] += angle
-				cost = self.AlignInLevelGaussNewton(source_, 0)
-				print("angle: ", original_pose[2] + angle, "cost: ", cost)
-				cv2.imshow('scan', cv2.addWeighted(self.scan_map[1], 0.5, self.field_[1], 0.5, 0))
-				# cv2.waitKey(0)
-				if cost > 0:
-					if cost < min_cost:
-						min_cost = cost
-						best_angle = angle
-						temp_pose=self.current_pose_.copy()
-			# 使用最佳角度在每个层级上进行配准
-			# if best_angle is not None:
-			print("min_cost: ", min_cost)
+		# original_pose = self.current_pose_.copy()
 
-			self.current_pose_ = temp_pose.copy()
-			# self.current_pose_[2] += best_angle
-			# self.AlignInLevelGaussNewton(source_, 0)  # 直接从第二层开始配准
-			self.AlignInLevelGaussNewton(source_, 1)  # 直接从第二层开始配准
-			self.AlignInLevelGaussNewton(source_, 2)  # 直接从第二层开始配准
-		else:
-			self.current_pose_ = original_pose.copy()
-			self.AlignInLevelGaussNewton(source_, 2)
-
-
+		self.AlignInLevelGaussNewton(source_, 2)  # 直接从第二层开始配准
 		if self.pose_last is not None:
 			self.pose_last_last = self.pose_last.copy()
 		self.pose_last=self.current_pose_.copy()

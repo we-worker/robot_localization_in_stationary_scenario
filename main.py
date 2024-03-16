@@ -10,6 +10,7 @@ import serial
 from LIDAR_LD06_python_loder.CalcLidarData import * 
 from multiprocessing import Process, Lock ,Manager
 import copy
+import json
 # from queue import LifoQueue
 
 
@@ -60,7 +61,7 @@ if __name__ == '__main__':
     # 定义机器人参数，包括传感器点数，起始角度，结束角度，最大距离，速度和角速度
     bot_param = [468,0, 360, 800.0, 6.0, 6.0]
     # 定义机器人的初始位置，包括x坐标，y坐标和角度
-    bot_pos = np.array([40.0, 235, 0.0])
+    bot_pos = np.array([100.0, 250, -3.14/2])
     # 创建一个2D激光机器人环境，输入参数为机器人位置，机器人参数和地图图片
     env = SingleBotLaser2Dgrid(bot_pos, bot_param, 'maps/map1.png')
     # 初始化GridMap，定义地图参数，包括占用概率，空闲概率，最大概率和最小概率
@@ -106,6 +107,10 @@ if __name__ == '__main__':
             if len(sensorDatas['angles']) !=len(sensorDatas['ranges']):
                 print("error",len(sensorDatas['angles']),len(sensorDatas['ranges']))
                 continue
+            # # 把sensorDatas按照python字典的格式保存到文件中，多次保存，不要覆盖
+            # with open('sensorDatas.json', 'a') as f:
+            #     f.write(json.dumps(sensorDatas) + '\n')
+
 
          # 绘制机器人在地图上的位置和传感器数据
             sensorDatas['ranges'] = [x *10 for x in sensorDatas['ranges']]
@@ -116,16 +121,17 @@ if __name__ == '__main__':
 
 
             start_time = time.time()
-            lf.Align(sensorDatas)#测试结果20-60ms执行一次
+            lf.Align(sensorDatas)#测试结/s果20-60ms执行一次
             end_time = time.time()
             elapsed_time = end_time - start_time
             if elapsed_time>0.4:
                 print("AlignGaussNewton took {:.2f} seconds to process.".format(elapsed_time))
             position_text = "Position: ({:.2f}, {:.2f}, {:.2f})".format(lf.current_pose_[0], lf.current_pose_[1], lf.current_pose_[2])
             # print(position_text)
+            cv2.imshow('scan',cv2.addWeighted(lf.scan_map[1], 0.5, lf.field_[1], 0.5, 0))
             # cv2.imshow('scan',lf.scan_map[0])
 
-            cv2.waitKey(10)
+            cv2.waitKey(1)
 
     cv2.destroyAllWindows()
 
