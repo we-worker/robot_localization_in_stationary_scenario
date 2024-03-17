@@ -70,6 +70,7 @@ class Lidar_Datas:
 
                 dist_angles['ranges']=(self.tempdistances)
                 dist_angles['angles']=(self.tempangles)
+                dist_angles['is_new']=True
 
                 self.tempdistances.clear()
                 self.tempangles.clear()
