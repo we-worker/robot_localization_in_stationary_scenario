@@ -16,7 +16,7 @@ class LidarData:
 
 
 class Lidar_Datas:
-    def __init__(self,ser_):
+    def __init__(self,ser_,dist_angles_):
         self.ser=ser_
         self.loopFlag = True
         self.tmpString = ""
@@ -25,6 +25,7 @@ class Lidar_Datas:
         self.Datacount=0
         self.tempdistances=list()
         self.tempangles=list()
+        self.dist_angles=dist_angles_
         # self.lock=Lock()
 
     def CalcLidarData(self,str):
@@ -59,7 +60,7 @@ class Lidar_Datas:
     
 
 
-    def read_and_parse_data(self,dist_angles):
+    def read_and_parse_data(self):
 
         # angles = []
         # distances = []
@@ -68,9 +69,9 @@ class Lidar_Datas:
             if(self.Datacount % 40 == 39):
                 self.Datacount=0
 
-                dist_angles['ranges']=(self.tempdistances)
-                dist_angles['angles']=(self.tempangles)
-                dist_angles['is_new']=True
+                self.dist_angles['ranges']=(self.tempdistances)
+                self.dist_angles['angles']=(self.tempangles)
+                self.dist_angles['is_new']=True
 
                 self.tempdistances.clear()
                 self.tempangles.clear()

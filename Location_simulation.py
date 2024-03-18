@@ -10,6 +10,15 @@ import socket
 import threading
 
 Main_prosses_data=None #全局变量，用于存储主进程回传给定位程序的数据，例如机器人右转90度
+# 读取配置文件
+with open('config.yaml', 'r',encoding='utf-8') as file:
+	config = yaml.safe_load(file)
+if config['test']['save_log']:
+		# 获取当前时间并格式化为字符串
+	now = datetime.datetime.now()
+	formatted_now = now.strftime("%m%d%H%M%S")
+
+#-------------------------------------处理与主逻辑程序之间的socket通信-------------------------------------
 def handle_socket(sock, port):
 	conn, addr = sock.accept()
 	while True:
@@ -17,44 +26,37 @@ def handle_socket(sock, port):
 		if data:
 			global Main_prosses_data
 			Main_prosses_data=data
-			# print(f'Received from {port}: ', data)
+			print(f'Received from {port}: ', data)
 
-# 读取配置文件
-with open('config.yaml', 'r') as file:
-	config = yaml.safe_load(file)
-# 创建1个socket对象
-sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# 绑定到对应的端口
-sock1.bind(('localhost', config['socket']['recv_port']))
-# 开始监听
-sock1.listen(1)
-# 创建并启动两个线程，分别处理两个连接
-threading.Thread(target=handle_socket, args=(sock1,  config['socket']['send_port'])).start()
+sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)# 创建1个socket对象
+sock1.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+sock1.bind(('localhost', config['socket']['recv_port']))# 绑定到对应的端口
+sock1.listen(1)# 开始监听
+thread1 = threading.Thread(target=handle_socket, args=(sock1,  config['socket']['recv_port']))
+thread1.daemon = True
+thread1.start()
+
+#发送给主逻辑程序的数据，建立socket链接
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client_socket.setblocking(False)# 设置为非阻塞模式
+try:
+	client_socket.connect(('localhost', config['socket']['send_port']))
+except:
+	pass
 
 def send(text):
 	try:
 		client_socket.send(text.encode())
-	except (BrokenPipeError, OSError):
+	except :
 		# 如果连接被关闭，或者其他网络错误，打印错误信息并退出循环
 		print(f"Send data error in port:{config['socket']['send_port']}")
-
-# 创建一个socket对象
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# 设置为非阻塞模式
-client_socket.setblocking(False)
-try:
-    # 连接到服务器，后续把数据都发送到这个socket
-    client_socket.connect(('localhost', 23333))
-except :
-    # 如果立即连接不上，忽略错误，后续会使用select来检查连接状态
-    pass
 
 
 
 # 主函数
 if __name__ == '__main__':
 	# 初始化OpenCV窗口
-	cv2.namedWindow('view', cv2.WINDOW_AUTOSIZE)
+	# cv2.namedWindow('view', cv2.WINDOW_AUTOSIZE)
 	cv2.namedWindow('scan', cv2.WINDOW_AUTOSIZE)
 	# 定义机器人的初始位置，包括x坐标，y坐标和角度
 	bot_pos = np.array(config['robot']['init_pose'])
@@ -103,17 +105,20 @@ if __name__ == '__main__':
 		 # 绘制机器人在地图上的位置和传感器数据
 			sensorDatas['ranges'] = [x *10 for x in sensorDatas['ranges']]
 
-			# start_time = time.time()
-			lf.Align(sensorDatas,Main_prosses_data)#测试结/s果20-60ms执行一次
+				# start_time = time.time()
+			if lf.Align(sensorDatas,Main_prosses_data): #测试结/s果0.01-0.05ms执行一次
+
+				#保留了测用时的代码
+				# end_time = time.time()
+				# elapsed_time = end_time - start_time
+				# if elapsed_time>0.01:
+				# 	print("AlignGaussNewton took {:.2f} seconds to process.".format(elapsed_time))
+				position_text = "Position: ({:.2f}, {:.2f}, {:.2f})".format(lf.current_pose_[0], lf.current_pose_[1], np.rad2deg(lf.current_pose_[2]))
+				print(position_text)
+				send(position_text)
+			else:
+				send("position_Error!")
 			Main_prosses_data=None
-			# end_time = time.time()
-			# elapsed_time = end_time - start_time
-			# if elapsed_time>0.01:
-			# 	print("AlignGaussNewton took {:.2f} seconds to process.".format(elapsed_time))
-			position_text = "Position: ({:.2f}, {:.2f}, {:.2f})".format(lf.current_pose_[0], lf.current_pose_[1], np.rad2deg(lf.current_pose_[2]))
-			print(position_text)
-			# 将位置信息转换为字符串，并通过socket发送出去
-			send(position_text)
 
 			#self.scan_map.append(np.full((self.field_[l].shape[0],self.field_[l].shape[1]), 1, dtype=np.float32))
 			img=cv2.addWeighted(lf.scan_map[lf.levels_-1], 0.7, lf.field_[lf.levels_-1], 0.5, 0)
@@ -121,7 +126,8 @@ if __name__ == '__main__':
 			cv2.circle(img,(int(lf.current_pose_[0]+lf.scan_map[lf.levels_-1].shape[1]/3), int(lf.current_pose_[1]+lf.scan_map[lf.levels_-1].shape[0]/3)), int(3), (0,0,255), -1)
 			cv2.imshow('scan',img)
 
-			cv2.waitKey(60)
+			if cv2.waitKey(60) & 0xFF == 27:
+				break
 
 	cv2.destroyAllWindows()
 

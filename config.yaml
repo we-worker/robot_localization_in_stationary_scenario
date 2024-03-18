@@ -1,5 +1,5 @@
   serial: #串口相关配置，用于激光雷达的数据读取
-    port: /dev/ttyUSB0  # 串口号,windwos下为COMx,linux下为/dev/ttyUSBx
+    port: COM2  # 串口号,windwos下为COMx,linux下为/dev/ttyUSBx，对于com>10，需要使用\\\\.\\COMx（自己查必应吧）
   lidar: #激光雷达相关配置
     filter_angles: [[30, 60],[120,150],[210,240],[300,330],[30,160]]  # 激光雷达过滤角度，只有不在这些角度范围内的数据才会被使用
     trust_distance_range: [3, 800]  # 激光雷达可信距离范围，大于或小于这个距离的数据舍弃，单位为厘米
@@ -11,6 +11,7 @@
     levels: 2  # 似然场层数
     ratios: [0.2, 1]  # 相比占据栅格图的比例尺,可以代表每层缩小多少倍
     range: 20  # 似然场大小
+    lost_cost: 4.5 # 认为机器人丢失时的阈值，这个值是与点云分布在地图上的情况有关
     cache: True  # 是否使用上次缓存的似然场，如果False则会重新计算似然场，修改似然场参数后基本都需要重新计算似然场
     path: ./maps # 似然场地图路径
   map: #地图相关配置

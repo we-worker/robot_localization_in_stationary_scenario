@@ -16,6 +16,7 @@ class LikelihoodField:
 		self.source_ = None #传感器数据（待匹配的源）
 		self.scan_map =list() #保存激光雷达扫描的扫描结果
 		self.range_ = config['likelihood_field']['range']
+		self.lost_cost=config['likelihood_field']['lost_cost']
 
 		self.xy_limit = config['robot']['xy_limit']
 		self.filter_angles=config['lidar']['filter_angles']
@@ -189,27 +190,29 @@ class LikelihoodField:
 			print("min_cost: ", min_cost)
 			self.current_pose_ = temp_pose.copy()
 			self.AlignInLevelGaussNewton(source_, 1)  # 直接从第二层开始配准
+			return True
 		else:
 			self.current_pose_ = original_pose.copy()
+			return False
 			
 
 	def Align(self, source_,Main_prosses_data=None):
 		# # 先粗略计算机器人位置差，基于前两次机器人位置，估计匀速运动，计算当前位置
 		if self.pose_last is not None and self.pose_last_last is not None:
-			self.current_pose_[0]+=(self.pose_last[0]-self.pose_last_last[0])/2
-			self.current_pose_[1]+=(self.pose_last[1]-self.pose_last_last[1])/2
-			self.current_pose_[2]+=(self.pose_last[2]-self.pose_last_last[2])/2
+			self.current_pose_[0]=(self.pose_last[0]-self.pose_last_last[0])/2+self.pose_last_last[0]
+			self.current_pose_[1]=(self.pose_last[1]-self.pose_last_last[1])/2+self.pose_last_last[1]
+			self.current_pose_[2]=(self.pose_last[2]-self.pose_last_last[2])/2+self.pose_last_last[2]
 		# 记录当前位置
 		original_pose = self.current_pose_.copy()
 
 		cost=self.AlignInLevelGaussNewton(source_, self.levels_-1)  # 直接从最后一层开始配准
-		print(Main_prosses_data)
-		if cost>4:
+		# print(Main_prosses_data)
+		if cost>self.lost_cost:
 			print("Loaction Error")
 			# 地图感知漂移了，需要其他方式重定位。
 			##!!!!!!!!!!!!!!!注意下面两条是实现丢失时基于撒点的重定位，会占用大量cpu运算，务必保持此时机器人相对静止，如果机器人还在运动，效果会非常糟糕!!!!!!!!!
 			# self.current_pose_=self.original_pose.copy()
-			# self.ReAlign(source_)
+			# return self.ReAlign(source_)
 			#！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
 
 		# # print(f"cost = {cost}")
@@ -219,5 +222,5 @@ class LikelihoodField:
 			self.pose_last_last = self.pose_last.copy()
 		self.pose_last=self.current_pose_.copy()
 
-
+		return True
 		

@@ -1,60 +1,58 @@
 import socket
 import threading
-# from Move_contorller import *
 import time
 
-#处理定位用的回调程序
-def location_handle(sock, port):
+class SocketHandler:
+	def __init__(self, port, handler):
+		# 创建socket对象
+		self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		# 绑定到本地主机和指定端口
+		self.sock.bind(('localhost', port))
+		# 开始监听连接
+		self.sock.listen(1)
+		# 创建并启动处理连接的线程
+		self.thread = threading.Thread(target=handler, args=(self.sock, port))
+		self.thread.daemon = True
+		self.thread.start()
+
+def location_handle(sock, port): #处理定位用的回调程序
 	conn, addr = sock.accept()
 	while True:
 		data = conn.recv(1024)
 		if data:
 			print(f'Received from {port}: ', data)
 
-#处理yolo用的回调程序
-def yolo_handle(sock, port):
+def yolo_handle(sock, port):  #处理yolo用的回调程序
 	conn, addr = sock.accept()
 	while True:
 		data = conn.recv(1024)
 		if data:
 			print(f'Received from {port}: ', data)
 
-# 创建两个socket对象
-sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock1.bind(('localhost', 23333))# 绑定到对应的端口
-sock2.bind(('localhost', 23335))
-sock1.listen(1)# 开始监听
-sock2.listen(1)
-
-# 创建并启动两个线程，分别处理两个连接
-threading.Thread(target=location_handle, args=(sock1, 23333)).start()
-threading.Thread(target=yolo_handle, args=(sock2, 23335)).start()
-
-#发送给定位程序的数据
-def send_to_location(text):
+def send_to_location(client_socket, text): #发送给定位程序的数据，例如自旋180°
 	try:
 		client_socket.send(text.encode())
 	except (BrokenPipeError, OSError):
-		# 如果连接被关闭，或者其他网络错误，打印错误信息并退出循环
 		print(f"Send data error in port 23334")
 
-# 创建一个socket对象
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.setblocking(False)# 设置为非阻塞模式
-#下面的代码是为了保证连接定位成功
-connected = False
-while not connected:
-	try:
-		# 连接到服务器，后续把数据都发送到这个socket
-		client_socket.connect(('localhost', 23334))
-		connected = True
-	except :
-		# 如果立即连接不上，忽略错误
-		pass
-
+def connect_to_location(): #死循环连接定位程序socket，主要用于给定位程序发送反馈，，例如自旋180°
+	client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	client_socket.setblocking(True)#阻塞模式
+	connected = False
+	while not connected:
+		try:
+			client_socket.connect(('localhost', 23334))
+			connected = True
+			print("connect to location success")
+		except :
+			time.sleep(1)
+	return client_socket
 
 if __name__ == '__main__':
+	location_socket = SocketHandler(23333, location_handle)#创建定位程序数据接收socket
+	yolo_socket = SocketHandler(23335, yolo_handle)#创建yolo数据接收socket
+	client_socket = connect_to_location()#连接定位程序反馈socket
 	while True:
+		# 这里可以添加你的主循环代码
 		time.sleep(5)
-		send_to_location("turn right 90")
+		send_to_location(client_socket,"turn right 90")#发送给定位程序的数据，例如自旋90°
