@@ -64,7 +64,7 @@ if __name__ == '__main__':
 	if config['likelihood_field']['cache']:
 		lf = LikelihoodField(config,config['likelihood_field']['path'],bot_pos)
 	else:
-		im = cv2.imread("maps/map1.png")
+		im = cv2.imread(config['map']['path'])
 		m = np.asarray(im)
 		m = cv2.cvtColor(m, cv2.COLOR_RGB2GRAY)
 		m = m.astype(float) / 255.

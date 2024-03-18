@@ -62,7 +62,7 @@ if __name__ == '__main__':
 	if config['likelihood_field']['cache']:
 		lf = LikelihoodField(config,config['likelihood_field']['path'],bot_pos)
 	else:
-		im = cv2.imread("maps/map1.png")
+		im = cv2.imread(config['map']['path'])
 		m = np.asarray(im)
 		m = cv2.cvtColor(m, cv2.COLOR_RGB2GRAY)
 		m = m.astype(float) / 255.
@@ -78,7 +78,7 @@ if __name__ == '__main__':
 	}
 
 	# 获取机器人的传感器数据
-	with open('logs/log_0317135854.json', 'r') as f:
+	with open(config['test']['use_log_path'], 'r') as f:
 
 
 		frame_count=0
@@ -86,7 +86,8 @@ if __name__ == '__main__':
 		while(1):
 			frame_count=frame_count+1
 			# print(frame_count)
-			if frame_count % 2 != 0:  # 如果计数器不是5的倍数，跳过当前帧
+			#!!!!!!!!!!!!!!注意可以通过frame_count%n来控制模拟丢数据帧的情况，这对于一些极端测试比较由于!!!!!!!!!!!!!
+			if frame_count % 1 != 0:  #frame_count %1为不丢失数据帧
 				continue
 			line = f.readline()
 					# 解析json格式的数据
@@ -114,9 +115,10 @@ if __name__ == '__main__':
 			# 将位置信息转换为字符串，并通过socket发送出去
 			send(position_text)
 
-			
-			img=cv2.addWeighted(lf.scan_map[lf.levels_-1], 0.5, lf.field_[lf.levels_-1], 0.5, 0)
-			cv2.circle(img,(int(lf.current_pose_[0]+lf.scan_map[lf.levels_-1].shape[1]/3), int(lf.current_pose_[1]+lf.scan_map[lf.levels_-1].shape[0]/3)), int(3), (0,255,255), -1)
+			#self.scan_map.append(np.full((self.field_[l].shape[0],self.field_[l].shape[1]), 1, dtype=np.float32))
+			img=cv2.addWeighted(lf.scan_map[lf.levels_-1], 0.7, lf.field_[lf.levels_-1], 0.5, 0)
+			# img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR) #可以多颜色显示代码
+			cv2.circle(img,(int(lf.current_pose_[0]+lf.scan_map[lf.levels_-1].shape[1]/3), int(lf.current_pose_[1]+lf.scan_map[lf.levels_-1].shape[0]/3)), int(3), (0,0,255), -1)
 			cv2.imshow('scan',img)
 
 			cv2.waitKey(60)

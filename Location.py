@@ -80,7 +80,7 @@ if __name__ == '__main__':
 	if config['likelihood_field']['cache']:
 		lf = LikelihoodField(config,config['likelihood_field']['path'],bot_pos)
 	else:
-		im = cv2.imread("maps/map1.png")
+		im = cv2.imread(config['map']['path'])
 		m = np.asarray(im)
 		m = cv2.cvtColor(m, cv2.COLOR_RGB2GRAY)
 		m = m.astype(float) / 255.
@@ -140,7 +140,8 @@ if __name__ == '__main__':
 			print(position_text)
 			send(position_text)
 			
-			img=cv2.addWeighted(lf.scan_map[lf.levels_-1], 0.5, lf.field_[lf.levels_-1], 0.5, 0)
+			img=cv2.addWeighted(lf.scan_map[lf.levels_-1], 0.7, lf.field_[lf.levels_-1], 0.5, 0)
+			# img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR) #可以多颜色显示代码
 			cv2.circle(img,(int(lf.current_pose_[0]+lf.scan_map[lf.levels_-1].shape[1]/3), int(lf.current_pose_[1]+lf.scan_map[lf.levels_-1].shape[0]/3)), int(3), (0,255,255), -1)
 			cv2.imshow('scan',img)
 

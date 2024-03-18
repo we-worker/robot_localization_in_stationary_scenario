@@ -10,6 +10,7 @@ def location_handle(sock, port):
 		data = conn.recv(1024)
 		if data:
 			print(f'Received from {port}: ', data)
+
 #处理yolo用的回调程序
 def yolo_handle(sock, port):
 	conn, addr = sock.accept()
@@ -21,20 +22,16 @@ def yolo_handle(sock, port):
 # 创建两个socket对象
 sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-# 绑定到对应的端口
-sock1.bind(('localhost', 23333))
+sock1.bind(('localhost', 23333))# 绑定到对应的端口
 sock2.bind(('localhost', 23335))
-
-# 开始监听
-sock1.listen(1)
+sock1.listen(1)# 开始监听
 sock2.listen(1)
 
 # 创建并启动两个线程，分别处理两个连接
 threading.Thread(target=location_handle, args=(sock1, 23333)).start()
 threading.Thread(target=yolo_handle, args=(sock2, 23335)).start()
 
-
+#发送给定位程序的数据
 def send_to_location(text):
 	try:
 		client_socket.send(text.encode())
@@ -44,8 +41,7 @@ def send_to_location(text):
 
 # 创建一个socket对象
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# 设置为非阻塞模式
-client_socket.setblocking(False)
+client_socket.setblocking(False)# 设置为非阻塞模式
 #下面的代码是为了保证连接定位成功
 connected = False
 while not connected:
@@ -54,11 +50,11 @@ while not connected:
 		client_socket.connect(('localhost', 23334))
 		connected = True
 	except :
-		# 如果立即连接不上，忽略错误，后续会使用select来检查连接状态
+		# 如果立即连接不上，忽略错误
 		pass
 
 
-
-while True:
-	time.sleep(5)
-	send_to_location("turn right 90")
+if __name__ == '__main__':
+	while True:
+		time.sleep(5)
+		send_to_location("turn right 90")

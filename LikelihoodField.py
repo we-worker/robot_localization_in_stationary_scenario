@@ -139,8 +139,6 @@ class LikelihoodField:
 				dx = np.linalg.solve(H, b)
 			except:
 				dx=np.dot(np.linalg.pinv(H),b)
-				# print("singular H")
-				# return -1
 			if np.isnan(dx[0]):
 				break
 
@@ -165,25 +163,58 @@ class LikelihoodField:
 
 		return cost
 
+	#丢失定位时，撒角度重定位
+	def ReAlign(self,source_):
+
+		original_pose = self.current_pose_.copy()
+		temp_pose=self.current_pose_.copy()
+
+		# 将360度分为10个部分
+		angles = np.linspace(0, 2 * np.pi, 10)
+		# 对每个角度进行配准，并找到成本最小的角度
+		best_angle = None
+		min_cost = 100  # 初始最小成本设为角度为0时的成本
+		for angle in angles:  # 从第二个角度开始计算，因为角度为0已经计算过了
+			self.current_pose_ = original_pose.copy()
+			self.current_pose_[2] += angle
+			cost = self.AlignInLevelGaussNewton(source_, 0)
+			print("angle: ", original_pose[2] + angle, "cost: ", cost)
+			if cost > 0:
+				if cost < min_cost:
+					min_cost = cost
+					best_angle = angle
+					temp_pose=self.current_pose_.copy()
+		# 使用最佳角度在每个层级上进行配准
+		if best_angle is not None:
+			print("min_cost: ", min_cost)
+			self.current_pose_ = temp_pose.copy()
+			self.AlignInLevelGaussNewton(source_, 1)  # 直接从第二层开始配准
+		else:
+			self.current_pose_ = original_pose.copy()
+			
 
 	def Align(self, source_,Main_prosses_data=None):
-		# # 先粗略计算机器人位置差
+		# # 先粗略计算机器人位置差，基于前两次机器人位置，估计匀速运动，计算当前位置
 		if self.pose_last is not None and self.pose_last_last is not None:
 			self.current_pose_[0]+=(self.pose_last[0]-self.pose_last_last[0])/2
 			self.current_pose_[1]+=(self.pose_last[1]-self.pose_last_last[1])/2
 			self.current_pose_[2]+=(self.pose_last[2]-self.pose_last_last[2])/2
 		# 记录当前位置
 		original_pose = self.current_pose_.copy()
-		# self.AlignInLevelGaussNewton(source_, self.levels_-2)  # 从最后一层开始配准
-		cost=self.AlignInLevelGaussNewton(source_, self.levels_-1)  # 直接从第二层开始配准
-		print(Main_prosses_data)
-		if cost>3:
-			print("cost too large")
-			# self.current_pose_=self.original_pose.copy()
-			# 地图感知漂移了，需要其他方式重定位。
 
+		cost=self.AlignInLevelGaussNewton(source_, self.levels_-1)  # 直接从最后一层开始配准
+		print(Main_prosses_data)
+		if cost>4:
+			print("Loaction Error")
+			# 地图感知漂移了，需要其他方式重定位。
+			##!!!!!!!!!!!!!!!注意下面两条是实现丢失时基于撒点的重定位，会占用大量cpu运算，务必保持此时机器人相对静止，如果机器人还在运动，效果会非常糟糕!!!!!!!!!
+			# self.current_pose_=self.original_pose.copy()
+			# self.ReAlign(source_)
+			#！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！
 
 		# # print(f"cost = {cost}")
+			
+		#更新前两次位置，方便后续预估位置
 		if self.pose_last is not None:
 			self.pose_last_last = self.pose_last.copy()
 		self.pose_last=self.current_pose_.copy()
