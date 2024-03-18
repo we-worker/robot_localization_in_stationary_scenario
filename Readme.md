@@ -55,7 +55,7 @@
 ### LikelihoodField.py
 基于似然场的机器人定位算法
 
-底层原理：https://blog.csdn.net/qq_44175983/article/details/132388989
+底层原理：https://www.cnblogs.com/darkarc/p/18081246
 
 此文件基本不用修改，唯一需要修改的是对于大幅度变化，或小车自旋时，可以考虑给似然场的机器人初始位资做预测估计。
 
