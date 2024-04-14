@@ -6,13 +6,14 @@
 
 | 文件名        | 作用    |  是否需要修改  |
 | --------   | ------   | ----  |
-|LIDAR/CalcLidarData.py| 激光雷达数据处理 |  看激光雷达型号修改，此型号为LD06   |
+| CalcLidarData.py| 激光雷达数据处理 |  看激光雷达型号修改，此型号为LD06，有两个激光雷达型号   |
 | LikelihoodField.py     | 基于似然场的机器人定位算法 |   基本不需要    |
 | Location.py        |  机器人定位实现主程序  |  基本不需要   |
 | Location_simulation.py        |  机器人定位_基于数据包调试  |  基本不需要   |
 | config.yaml       |  机器人定位配置参数  |  需要   |
 | contorller.py        |  机器人与stm32通信程序  |  需要   |
 | Main.py        |  机器人逻辑主程序  |  需要   |
+| run.bat        |  一键启动多个python程序  |  需要   |
 
 ![架构](./架构.png)
 ---
