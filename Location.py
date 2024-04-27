@@ -9,8 +9,7 @@ import copy
 import json
 import yaml
 import datetime
-import socket
-import threading
+from Socket_fun import *
 
 Main_prosses_data=None #全局变量，用于存储主进程回传给定位程序的数据，例如机器人右转90度
 # 读取配置文件
@@ -22,37 +21,7 @@ if config['test']['save_log']:
 	formatted_now = now.strftime("%m%d%H%M%S")
 
 #-------------------------------------处理与主逻辑程序之间的socket通信-------------------------------------
-def handle_socket(sock, port):
-	conn, addr = sock.accept()
-	while True:
-		data = conn.recv(1024)
-		if data:
-			global Main_prosses_data
-			Main_prosses_data=data
-			print(f'Received from {port}: ', data)
-
-sock1 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)# 创建1个socket对象
-sock1.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-sock1.bind(('localhost', config['socket']['recv_port']))# 绑定到对应的端口
-sock1.listen(1)# 开始监听
-thread1 = threading.Thread(target=handle_socket, args=(sock1,  config['socket']['recv_port']))
-thread1.daemon = True
-thread1.start()
-
-#发送给主逻辑程序的数据，建立socket链接
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.setblocking(False)# 设置为非阻塞模式
-try:
-	client_socket.connect(('localhost', config['socket']['send_port']))
-except:
-	pass
-
-def send(text):
-	try:
-		client_socket.send(text.encode())
-	except :
-		# 如果连接被关闭，或者其他网络错误，打印错误信息并退出循环
-		print(f"Send data error in port:{config['socket']['send_port']}")
+client2main = Client(config['socket']['port'])
 
 #处理激光雷达数据的进程
 def lidar_pross(dist_angles):
@@ -138,9 +107,9 @@ if __name__ == '__main__':
 				# 	print("AlignGaussNewton took {:.2f} seconds to process.".format(elapsed_time))
 				position_text = "Position: ({:.2f}, {:.2f}, {:.2f})".format(lf.current_pose_[0], lf.current_pose_[1], np.rad2deg(lf.current_pose_[2]))
 				print(position_text)
-				send(position_text)
+				client2main.write(position_text)
 			else:
-				send("position_Error!")
+				client2main.write("position_Error!")
 			Main_prosses_data=None
 			
 			img=cv2.addWeighted(lf.scan_map[lf.levels_-1], 0.7, lf.field_[lf.levels_-1], 0.5, 0)

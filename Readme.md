@@ -8,6 +8,7 @@
 | --------   | ------   | ----  |
 | CalcLidarData.py| 激光雷达数据处理 |  看激光雷达型号修改，此型号为LD06，有两个激光雷达型号   |
 | LikelihoodField.py     | 基于似然场的机器人定位算法 |   基本不需要    |
+| Socket_fun.py     | Socket通信程序的封装 |   基本不需要    |
 | Location.py        |  机器人定位实现主程序  |  基本不需要   |
 | Location_simulation.py        |  机器人定位_基于数据包调试  |  基本不需要   |
 | config.yaml       |  机器人定位配置参数  |  需要   |
