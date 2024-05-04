@@ -17,12 +17,12 @@ class Server:
 	def run(self):
 		self.sock.listen()# 开始监听连接
 		print("Serving...")
-		# while True:
-		print("Waiting for connection...")
-		self.conn, addr = self.sock.accept()
-		print("Recived new conn: %s from %s", self.conn, addr)
-		if self.read_handler is not None:
-			threading.Thread(target=self.read_handler, args=(self.conn,),daemon=True).start()
+		while True:
+			print("Waiting for connection...")
+			self.conn, addr = self.sock.accept()
+			print("Recived new conn: %s from %s", self.conn, addr)
+			if self.read_handler is not None:
+				threading.Thread(target=self.read_handler, args=(self.conn,),daemon=True).start()
 	def write(self,msg):
 		""" 向连接中发送 """
 		try:
