@@ -105,3 +105,7 @@ pip install numpy opencv-python pyserial PyYAML
 注意python版本越高越好，因为官方说新版本都在优化python运行速度。
 
 可以尝试使用pyinstall导出成exe，看是否能提升速度。
+
+---
+## 效果展示
+![](demo.gif)
